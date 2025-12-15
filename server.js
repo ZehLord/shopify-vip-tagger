@@ -168,10 +168,15 @@ app.post("/webhooks/orders-paid", async (req, res) => {
 });
 
 const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`Listening on :${port}`));
+
+// Prevent double-listen on Render
+if (!globalThis.__serverStarted) {
+  globalThis.__serverStarted = true;
+
+  app.listen(port, () => {
+    console.log(`Listening on :${port}`);
+  });
+}
 
 
-app.get("/", (_req, res) => res.send("OK"));
-
-app.listen(process.env.PORT || 3000);
 
