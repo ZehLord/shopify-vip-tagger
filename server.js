@@ -4,7 +4,7 @@ import crypto from "crypto";
 const app = express();
 app.use(express.raw({ type: "application/json" }));
 
-const SHOPIFY_WEBHOOK_SECRET = process.env.SHOPIFY_WEBHOOK_SECRET;
+const SHOPIFY_WEBHOOK_SECRET = (process.env.SHOPIFY_WEBHOOK_SECRET || "").trim();
 const SHOP = process.env.SHOP; // e.g. "your-store.myshopify.com"
 const ADMIN_ACCESS_TOKEN = process.env.ADMIN_ACCESS_TOKEN;
 const VIP_VARIANT_ID = process.env.VIP_VARIANT_ID; // recommended
@@ -12,9 +12,10 @@ const VIP_PRODUCT_ID = process.env.VIP_PRODUCT_ID; // optional fallback
 const VIP_SKU = process.env.VIP_SKU; // optional fallback
 
 function verifyShopifyHmac(req) {
-  const hmacHeader = req.get("X-Shopify-Hmac-Sha256") || "";
+  const hmacHeader = (req.get("X-Shopify-Hmac-Sha256") || "").trim();
+
   const digest = crypto
-    .createHmac("sha256", SHOPIFY_WEBHOOK_SECRET || "")
+    .createHmac("sha256", SHOPIFY_WEBHOOK_SECRET)
     .update(req.body)
     .digest("base64");
 
@@ -89,6 +90,10 @@ async function shopifyFetch(path, method, body) {
 app.get("/", (_req, res) => res.status(200).send("OK"));
 
 app.post("/webhooks/orders-paid", async (req, res) => {
+  console.log("Secret length:", SHOPIFY_WEBHOOK_SECRET.length);
+console.log("Secret last4:", SHOPIFY_WEBHOOK_SECRET.slice(-4));
+console.log("Header length:", (req.get("X-Shopify-Hmac-Sha256") || "").trim().length);
+
   const topic = req.get("X-Shopify-Topic");
   const shopDomain = req.get("X-Shopify-Shop-Domain");
   const webhookId = req.get("X-Shopify-Webhook-Id");
@@ -177,6 +182,7 @@ if (!globalThis.__serverStarted) {
     console.log(`Listening on :${port}`);
   });
 }
+
 
 
 
